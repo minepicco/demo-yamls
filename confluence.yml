@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: confluence-postgres
+  labels:
+    app: confluence
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: confluence
+    tier: postgres
+  clusterIP: None
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgress-pv-claim
+  labels:
+    app: confluence
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: confluence-postgres
+  labels:
+    app: confluence
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: confluence
+        tier: postgres
+    spec:
+      containers:
+      - image: postgres:9.6
+        name: postgres
+        env:
+          # $ kubectl create secret generic mysql-pass --from-file=password.txt
+          # make sure password.txt does not have a trailing newline
+        - name: POSTGRES_USER
+          value: confluence
+        - name: POSTGRES_PASSWORD
+          value: Mimosa2008
+          # valueFrom:
+            # secretKeyRef:
+              # name: mysql-pass
+              #key: password.txt
+        ports:
+        - containerPort: 5432
+          name: postgres
+        volumeMounts:
+        - name: postgres-persistent-storage
+          mountPath: /var/lib/postgres
+      volumes:
+      - name: postgres-persistent-storage
+        persistentVolumeClaim:
+          claimName: postgres-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: confluence
+  labels:
+    app: confluence
+spec:
+  ports:
+    - port: 80
+  selector:
+    app: confluence
+    tier: frontend
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: confluence-pv-claim
+  labels:
+    app: confluence
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: confluence
+  labels:
+    app: confluence
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: confluence
+        tier: frontend
+    spec:
+      containers:
+      - image: confluence:6.6.3
+        name: confluence
+        env:
+        - name: ATL_DB_TYPE
+          value: postgresql
+        - name: ATL_DB_USER
+          value: confluence
+        - name: ATL_JDBC_PASSWORD
+          value: Mimosa2008
+          # valueFrom:
+            # secretKeyRef:
+              # name: confluence-pass
+              # key: password.txt
+        ports:
+        - containerPort: 80
+          name: confluence
+        volumeMounts:
+        - name: confluence-persistent-storage
+          mountPath: /var/atlassian/application-data/
+      volumes:
+      - name: confluence-persistent-storage
+        persistentVolumeClaim:
+          claimName: confluence-pv-claim
