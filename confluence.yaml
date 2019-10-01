@@ -108,7 +108,7 @@ spec:
         tier: frontend
     spec:
       containers:
-      - image: confluence:6.6.3
+      - image: atlassian/confluence-server:6.6.3
         name: confluence
         env:
         - name: ATL_DB_TYPE
