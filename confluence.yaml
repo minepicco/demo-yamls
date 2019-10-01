@@ -74,6 +74,7 @@ metadata:
 spec:
   ports:
     - port: 80
+    - targetport: 8090
   selector:
     app: confluence
     tier: frontend
