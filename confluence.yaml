@@ -122,7 +122,7 @@ spec:
               # name: confluence-pass
               # key: password.txt
         ports:
-        - containerPort: 80
+        - containerPort: 8090
           name: confluence
         volumeMounts:
         - name: confluence-persistent-storage
