@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: splunk
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: splunk
+  namespace: splunk
+  labels:
+    app: splunk
+spec:
+  ports:
+    - port: 80
+      targetPort: 8000
+  selector:
+    app: splunk
+    tier: frontend
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: splunk-sp-claim1
+  namespace: splunk
+  labels:
+    app: splunk
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: splunk-sp-claim2
+  namespace: splunk
+  labels:
+    app: splunk
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: splunk
+  namespace: splunk
+  labels:
+    app: splunk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: splunk
+  template:
+    metadata:
+      labels:
+        app: splunk
+        tier: frontend
+    spec:
+      containers:
+      - image: splunk/splunk:latest
+        name: splunk
+        env:
+        - name: SPLUNK_START_ARGS
+          value: --accept-license
+        - name: SPLUNK_PASSWORD
+          value: Mimosa2008
+        - name: splunk_build_type
+          value: deb
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: splunk-persistent-storage1
+          mountPath: /opt/splunk/var/
+        - name: splunk-persistent-storage2
+          mountPath: /opt/splunk/etc/
+      volumes:
+      - name: splunk-persistent-storage1
+        persistentVolumeClaim:
+          claimName: splunk-sp-claim1
+      - name: splunk-persistent-storage2
+        persistentVolumeClaim:
+          claimName: splunk-sp-claim2
